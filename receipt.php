@@ -8,6 +8,10 @@ if (!$transaction_id) {
 
 $query = "SELECT * FROM sales WHERE transaction_id = '$transaction_id'";
 $result = $conn->query($query);
+$cashierName = $firstRow['cashier_name'] ?? 'N/A';
+
+echo "<p><strong>Cashier:</strong> {$cashierName}</p>";
+
 ?>
 
 <!DOCTYPE html>
@@ -51,6 +55,7 @@ $result = $conn->query($query);
         <p><strong>Transaction ID:</strong> <?= htmlspecialchars($transaction_id) ?></p>
         <p><strong>Date:</strong> <?= htmlspecialchars($firstRow['sale_date']) ?></p>
     </div>
+    
 
     <table class="table table-bordered">
         <thead class="table-secondary">

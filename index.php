@@ -10,10 +10,12 @@
 <body>
 <div class="container mt-5">
     <h2>Supermarket Sales System</h2>
+    
     <div class="mb-3">
     <label for="cashierName" class="form-label">Cashier Name</label>
-    <input type="text" class="form-control" id="cashierName" placeholder="Enter cashier name">
+    <input type="text" class="form-control" id="cashierName" placeholder="Enter cashier name" required>
 </div>
+
 
     <table class="table table-bordered" id="salesTable">
         <thead>
@@ -39,6 +41,7 @@
     <h4 class="mt-3">Grand Total: ₦<span id="grandTotal">0.00</span></h4>
     <button class="btn btn-success" id="submitSales">Submit Sales</button>
 </div>
+
 <!-- Thank You Modal -->
 <div class="modal fade" id="thankYouModal" tabindex="-1" aria-labelledby="thankYouModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -51,6 +54,11 @@
       </div>
     </div>
   </div>
+  
+</div>
+
+<div class="mx-auto my-3 text-center" >
+<a href="daily_sales_summary.php" class="btn btn-info mt-3">View Today's Sales Summary</a>
 </div>
 
 <script>
@@ -86,7 +94,6 @@ $(document).on("click", ".removeRow", function () {
     $(this).closest("tr").remove();
     calculateGrandTotal();
 });
-
 $("#submitSales").click(function () {
     let cashierName = $("#cashierName").val().trim();
     if (!cashierName) {
@@ -123,18 +130,13 @@ $("#submitSales").click(function () {
                 if (res.transaction_id) {
                     alert(res.message);
                     window.open("receipt.php?transaction_id=" + res.transaction_id, "_blank");
-                    $("#salesTable tbody").empty();
-                    $("#grandTotal").text('0.00');
-                    $("#cashierName").val(''); // reset cashier name
+                    location.reload(); // Reset the form
                 } else {
                     alert("Error: " + res.error);
                 }
             } catch (e) {
                 alert("Unexpected response: " + response);
             }
-        },
-        error: function (xhr, status, error) {
-            alert("AJAX error: " + error);
         }
     });
 });
@@ -142,5 +144,7 @@ $("#submitSales").click(function () {
 
 
 </script>
+
+
 </body>
 </html>
