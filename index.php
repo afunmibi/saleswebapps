@@ -95,7 +95,23 @@ $("#submitSales").click(function () {
                 let res = JSON.parse(response);
                 if (res.transaction_id) {
                     alert(res.message);
-                    window.open("receipt.php?transaction_id=" + res.transaction_id, "_blank");
+
+                    // Reset form
+                    $("#salesTable tbody").html(`
+                        <tr>
+                            <td><input type="text" class="form-control product"></td>
+                            <td><input type="number" class="form-control price" oninput="calculateSubtotal(this)"></td>
+                            <td><input type="number" class="form-control qty" oninput="calculateSubtotal(this)"></td>
+                            <td><input type="text" class="form-control subtotal" readonly></td>
+                            <td><button class="btn btn-danger removeRow">Remove</button></td>
+                        </tr>
+                    `);
+                    $("#grandTotal").text("0.00");
+
+                    // Redirect to receipt (same tab or new tab)
+                    window.location.href = "receipt.php?transaction_id=" + res.transaction_id;
+                    // OR open in new tab:
+                    // window.open("receipt.php?transaction_id=" + res.transaction_id, "_blank");
                 } else {
                     alert("Error: " + res.error);
                 }
@@ -105,6 +121,7 @@ $("#submitSales").click(function () {
         }
     });
 });
+
 </script>
 </body>
 </html>
