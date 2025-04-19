@@ -83,6 +83,7 @@ $result = $conn->query($query);
                 </tr>";
                 $grandTotal += $row['subtotal'];
             }
+            echo "<p><strong>Cashier:</strong> {$firstRow['cashier_name']}</p>";
             ?>
         </tbody>
     </table>
@@ -102,6 +103,7 @@ $result = $conn->query($query);
     </div>
 <?php endif; ?>
 </div>
+
 
 </body>
 </html>

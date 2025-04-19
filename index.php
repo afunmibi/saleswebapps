@@ -88,6 +88,12 @@ $(document).on("click", ".removeRow", function () {
 });
 
 $("#submitSales").click(function () {
+    let cashierName = $("#cashierName").val().trim();
+    if (!cashierName) {
+        alert("Please enter cashier name.");
+        return;
+    }
+
     let salesData = [];
     $("#salesTable tbody tr").each(function () {
         let product = $(this).find(".product").val();
@@ -107,26 +113,28 @@ $("#submitSales").click(function () {
     $.ajax({
         url: "submit_sales.php",
         type: "POST",
-        data: { sales: JSON.stringify(salesData) },
+        data: {
+            cashier_name: cashierName,
+            sales: JSON.stringify(salesData)
+        },
         success: function (response) {
             try {
-                let res = JSON.parse(response); // Parse the JSON response
+                let res = JSON.parse(response);
                 if (res.transaction_id) {
-                    alert(res.message);  // Show success message
+                    alert(res.message);
                     window.open("receipt.php?transaction_id=" + res.transaction_id, "_blank");
-                    
-                    // Reset the form and table
-                    $("#salesTable tbody").empty(); // Clear sales table
-                    $("#grandTotal").text('0.00'); // Reset grand total
+                    $("#salesTable tbody").empty();
+                    $("#grandTotal").text('0.00');
+                    $("#cashierName").val(''); // reset cashier name
                 } else {
                     alert("Error: " + res.error);
                 }
             } catch (e) {
-                alert("Unexpected response: " + response);  // Handle any errors
+                alert("Unexpected response: " + response);
             }
         },
-        error: function(xhr, status, error) {
-            alert("An error occurred: " + error);  // Handle AJAX error
+        error: function (xhr, status, error) {
+            alert("AJAX error: " + error);
         }
     });
 });
