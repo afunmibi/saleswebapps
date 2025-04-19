@@ -1,34 +1,30 @@
 <?php
 include 'db_connect.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $salesData = json_decode($_POST['sales'], true);
-    $date = date('Y-m-d');
-    $transaction_id = uniqid("TXN_");
+// Get sales data from POST request
+$sales = json_decode($_POST['sales'], true);
 
-    if (!empty($salesData)) {
-        foreach ($salesData as $sale) {
-            $product = $sale['product'];
-            $price = $sale['price'];
-            $qty = $sale['qty'];
-            $subtotal = $sale['subtotal'];
+// Loop through each sale and insert into database
+$transaction_id = 'TXN_' . uniqid();
 
-            $stmt = $conn->prepare("INSERT INTO sales (transaction_id, product, price, quantity, subtotal, sale_date) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssddds", $transaction_id, $product, $price, $qty, $subtotal, $date);
-            $stmt->execute();
-        }
+foreach ($sales as $sale) {
+    $product = $sale['product'];
+    $price = $sale['price'];
+    $qty = $sale['qty'];
+    $subtotal = $sale['subtotal'];
 
-        echo json_encode([
-            "message" => "Sales data saved!",
-            "transaction_id" => $transaction_id
-        ]);
-        exit;
-    } else {
-        echo json_encode(["error" => "No sales data received."]);
-        exit;
-    }
-} else {
-    echo json_encode(["error" => "Invalid request."]);
-    exit;
+    $query = "INSERT INTO sales (transaction_id, product, price, quantity, subtotal, sale_date) 
+              VALUES (?, ?, ?, ?, ?, NOW())";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ssdds", $transaction_id, $product, $price, $qty, $subtotal);
+    $stmt->execute();
 }
+
+// Send JSON response back to client
+$response = array(
+    "message" => "Sales data saved!",
+    "transaction_id" => $transaction_id
+);
+
+echo json_encode($response);
 ?>

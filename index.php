@@ -10,6 +10,11 @@
 <body>
 <div class="container mt-5">
     <h2>Supermarket Sales System</h2>
+    <div class="mb-3">
+    <label for="cashierName" class="form-label">Cashier Name</label>
+    <input type="text" class="form-control" id="cashierName" placeholder="Enter cashier name">
+</div>
+
     <table class="table table-bordered" id="salesTable">
         <thead>
             <tr>
@@ -33,6 +38,19 @@
     <button class="btn btn-primary" id="addRow">Add Row</button>
     <h4 class="mt-3">Grand Total: ₦<span id="grandTotal">0.00</span></h4>
     <button class="btn btn-success" id="submitSales">Submit Sales</button>
+</div>
+<!-- Thank You Modal -->
+<div class="modal fade" id="thankYouModal" tabindex="-1" aria-labelledby="thankYouModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="thankYouModalLabel">Success!</h5>
+      </div>
+      <div class="modal-body">
+        Sales recorded successfully. Redirecting to receipt...
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -92,35 +110,28 @@ $("#submitSales").click(function () {
         data: { sales: JSON.stringify(salesData) },
         success: function (response) {
             try {
-                let res = JSON.parse(response);
+                let res = JSON.parse(response); // Parse the JSON response
                 if (res.transaction_id) {
-                    alert(res.message);
-
-                    // Reset form
-                    $("#salesTable tbody").html(`
-                        <tr>
-                            <td><input type="text" class="form-control product"></td>
-                            <td><input type="number" class="form-control price" oninput="calculateSubtotal(this)"></td>
-                            <td><input type="number" class="form-control qty" oninput="calculateSubtotal(this)"></td>
-                            <td><input type="text" class="form-control subtotal" readonly></td>
-                            <td><button class="btn btn-danger removeRow">Remove</button></td>
-                        </tr>
-                    `);
-                    $("#grandTotal").text("0.00");
-
-                    // Redirect to receipt (same tab or new tab)
-                    window.location.href = "receipt.php?transaction_id=" + res.transaction_id;
-                    // OR open in new tab:
-                    // window.open("receipt.php?transaction_id=" + res.transaction_id, "_blank");
+                    alert(res.message);  // Show success message
+                    window.open("receipt.php?transaction_id=" + res.transaction_id, "_blank");
+                    
+                    // Reset the form and table
+                    $("#salesTable tbody").empty(); // Clear sales table
+                    $("#grandTotal").text('0.00'); // Reset grand total
                 } else {
                     alert("Error: " + res.error);
                 }
             } catch (e) {
-                alert("Unexpected response: " + response);
+                alert("Unexpected response: " + response);  // Handle any errors
             }
+        },
+        error: function(xhr, status, error) {
+            alert("An error occurred: " + error);  // Handle AJAX error
         }
     });
 });
+
+
 
 </script>
 </body>
