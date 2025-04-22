@@ -1,25 +1,50 @@
 <?php
 include 'db_connect.php';
 
+// Validate transaction ID
 $transaction_id = $_GET['transaction_id'] ?? null;
-if (!$transaction_id) {
-    die("Invalid transaction ID");
+if (!$transaction_id || !preg_match('/^TXN_[a-f0-9]{13}$/', $transaction_id)) {
+    http_response_code(400);
+    die(json_encode(['error' => 'Invalid transaction ID']));
 }
 
-$query = "SELECT * FROM sales WHERE transaction_id = '$transaction_id'";
-$result = $conn->query($query);
-$cashierName = $firstRow['cashier_name'] ?? 'N/A';
+try {
+    // Use prepared statement to prevent SQL injection
+    $stmt = $conn->prepare("SELECT * FROM sales WHERE transaction_id = ?");
+    $stmt->bind_param("s", $transaction_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-echo "<p><strong>Cashier:</strong> {$cashierName}</p>";
+    // Fetch all rows
+    $sales = [];
+    $cashier_name = 'N/A';
+    $sale_date = 'N/A';
+    $grand_total = 0;
 
+    while ($row = $result->fetch_assoc()) {
+        $sales[] = $row;
+        if ($cashier_name === 'N/A') {
+            $cashier_name = $row['cashier_name'] ?? 'N/A';
+            $sale_date = $row['sale_date'] ?? 'N/A';
+        }
+        $grand_total += floatval($row['subtotal'] ?? 0);
+    }
+
+    $stmt->close();
+    $conn->close();
+
+} catch (Exception $e) {
+    http_response_code(500);
+    die(json_encode(['error' => 'Database error: ' . $e->getMessage()]));
+}
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Receipt - <?= htmlspecialchars($transaction_id) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         @media print {
             .no-print { display: none; }
@@ -40,75 +65,58 @@ echo "<p><strong>Cashier:</strong> {$cashierName}</p>";
         .table th, .table td {
             vertical-align: middle;
         }
+        .table .text-right {
+            text-align: right;
+        }
     </style>
 </head>
 <body class="bg-light">
-
 <div class="receipt-box">
-<?php if ($result->num_rows > 0): ?>
-    <?php $firstRow = $result->fetch_assoc(); ?>
-    <div class="receipt-title">
-        <h4 class="fw-bold">🛒 Supermarket Receipt</h4>
-    </div>
+    <?php if (!empty($sales)): ?>
+        <div class="receipt-title">
+            <h4 class="fw-bold">🛒 Supermarket Receipt</h4>
+        </div>
 
-    <div class="mb-3">
-        <p><strong>Transaction ID:</strong> <?= htmlspecialchars($transaction_id) ?></p>
-        <p><strong>Date:</strong> <?= htmlspecialchars($firstRow['sale_date']) ?></p>
-    </div>
-    
+        <div class="mb-3">
+            <p><strong>Transaction ID:</strong> <?= htmlspecialchars($transaction_id) ?></p>
+            <p><strong>Date:</strong> <?= htmlspecialchars($sale_date) ?></p>
+            <p><strong>Cashier:</strong> <?= htmlspecialchars($cashier_name) ?></p>
+        </div>
 
-    <table class="table table-bordered">
-        <thead class="table-secondary">
-            <tr>
-                <th>Product</th>
-                <th>Qty</th>
-                <th>Price (₦)</th>
-                <th>Total (₦)</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
-            $grandTotal = 0;
-            // Display first row
-            echo "<tr>
-                <td>{$firstRow['product']}</td>
-                <td>{$firstRow['quantity']}</td>
-                <td>{$firstRow['price']}</td>
-                <td>{$firstRow['subtotal']}</td>
-            </tr>";
-            $grandTotal += $firstRow['subtotal'];
+        <table class="table table-bordered">
+            <thead class="table-secondary">
+                <tr>
+                    <th>Product</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Price (₦)</th>
+                    <th class="text-right">Total (₦)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($sales as $row): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($row['product']) ?></td>
+                        <td class="text-right"><?= htmlspecialchars($row['quantity']) ?></td>
+                        <td class="text-right"><?= number_format($row['price'], 2) ?></td>
+                        <td class="text-right"><?= number_format($row['subtotal'], 2) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
 
-            // Display remaining rows
-            while ($row = $result->fetch_assoc()) {
-                echo "<tr>
-                    <td>{$row['product']}</td>
-                    <td>{$row['quantity']}</td>
-                    <td>{$row['price']}</td>
-                    <td>{$row['subtotal']}</td>
-                </tr>";
-                $grandTotal += $row['subtotal'];
-            }
-            echo "<p><strong>Cashier:</strong> {$firstRow['cashier_name']}</p>";
-            ?>
-        </tbody>
-    </table>
+        <div class="text-end">
+            <h5 class="fw-bold">Grand Total: ₦<?= number_format($grand_total, 2) ?></h5>
+        </div>
 
-    <div class="text-end">
-        <h5 class="fw-bold">Grand Total: ₦<?= number_format($grandTotal, 2) ?></h5>
-    </div>
-
-    <div class="text-center mt-4 no-print">
-        <button class="btn btn-primary" onclick="window.print()">🖨️ Print Receipt</button>
-        <a href="index.php" class="btn btn-secondary">⬅️ Back</a>
-    </div>
-
-<?php else: ?>
-    <div class="alert alert-warning text-center">
-        No records found for this transaction.
-    </div>
-<?php endif; ?>
+        <div class="text-center mt-4 no-print">
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Print Receipt</button>
+            <a href="index.php" class="btn btn-secondary">⬅️ Back</a>
+        </div>
+    <?php else: ?>
+        <div class="alert alert-warning text-center">
+            No records found for this transaction.
+        </div>
+    <?php endif; ?>
 </div>
-
-
 </body>
 </html>
