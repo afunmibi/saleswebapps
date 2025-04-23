@@ -66,7 +66,7 @@ if (empty($_SESSION['csrf_token'])) {
 
 <div class="mx-auto my-3 text-center">
     <a href="daily_sales_summary.php" class="btn btn-info mt-3">View Transaction Sales Summary</a>
-    <a href="product_sales_summary.php" class="btn btn-info mt-3">View Product Sales Summary</a>
+    <a href="product_sales_summary.php" class="btn btn-info mt-3">View All Products Sales Summary</a>
 </div>
 
 <script>
